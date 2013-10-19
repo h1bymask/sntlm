@@ -27,7 +27,7 @@ int wmain (int argc, wchar_t **argv) {
 			for (auto it = std::begin(result), eit = std::end(result); it != eit; ++it) {
 				std::cout << std::setw(2) << std::setfill('0') << (int)(*it);
 			}
-			std::cout << std::endl << "==============================" << std::endl;
+			std::cout << std::endl << std::string(8 + 8 + 16 * 2, '=') << std::endl;
 		} while (true);
 	}
 	catch (win32_exception& e) {

@@ -26,5 +26,6 @@ void toLower(std::string& string, UINT codepage = CP_UTF8);
 
 
 std::string numtostr(DWORD num);
+std::string numtostr(size_t num);
 
 #endif //_UCONV_H_

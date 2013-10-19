@@ -94,3 +94,10 @@ std::string numtostr(DWORD num) {
 	result.resize(len > 0 ? len : 0);
 	return result;
 }
+
+std::string numtostr(size_t num) {
+	std::string result(25, '\0');
+	int len = _snprintf(&result[0], result.length(), "%lu", num);
+	result.resize(len > 0 ? len : 0);
+	return result;
+}
