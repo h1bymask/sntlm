@@ -23,6 +23,9 @@ std::string narrow(const wchar_t *string, size_t length, UINT codepage = CP_UTF8
 void toUpper(std::string& string, UINT codepage = CP_UTF8);
 void toLower(std::string& string, UINT codepage = CP_UTF8);
 
+void toUpper(std::wstring& string);
+void toLower(std::wstring& string);
+
 
 
 std::string numtostr(DWORD num);

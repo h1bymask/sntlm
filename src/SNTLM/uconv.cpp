@@ -70,21 +70,34 @@ std::string narrow(const wchar_t *string, size_t length, UINT codepage) {
 
 
 template <typename Func>
-void inplace(std::string& string, UINT codepage, Func func) {
-	std::wstring temp = widen(string, codepage);
-	if (temp.length() > MAXDWORD) {
+void inplaceW(std::wstring& string, Func func) {
+	if (string.length() > MAXDWORD) {
 		throw uconv_error("String too long");
 	}
-	func(&temp[0], temp.length());
+	func(&string[0], string.length());
+}
+
+template <typename Func>
+void inplaceA(std::string& string, UINT codepage, Func func) {
+	std::wstring temp = widen(string, codepage);
+	inplaceW(temp, func);
 	string = narrow(temp, codepage);
 }
 
 void toUpper(std::string& string, UINT codepage) {
-	return inplace(string, codepage, CharUpperBuffW);
+	return inplaceA(string, codepage, CharUpperBuffW);
 }
 
 void toLower(std::string& string, UINT codepage) {
-	return inplace(string, codepage, CharLowerBuffW);
+	return inplaceA(string, codepage, CharLowerBuffW);
+}
+
+void toUpper(std::wstring& string) {
+	return inplaceW(string, CharUpperBuffW);
+}
+
+void toLower(std::wstring& string) {
+	return inplaceW(string, CharLowerBuffW);
 }
 
 
