@@ -3,13 +3,18 @@
 
 #include <memory>
 
+UINT win32_exception::codepage;
 
 win32_exception::win32_exception(DWORD errorcode) 
 	: std::runtime_error(generateWhat(errorcode))
 { }	
 
+void win32_exception::setCodePage(UINT codepage) {
+	win32_exception::codepage = codepage;
+}
+
 std::string win32_exception::generateWhat(DWORD errorcode) {
-	std::string result = GetWin32ErrorMessageA(errorcode);
+	std::string result = GetWin32ErrorMessageA(errorcode, codepage);
 	result += " (";
 	result += numtostr(errorcode);
 	result += ")";

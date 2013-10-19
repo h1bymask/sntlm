@@ -59,29 +59,6 @@ CryptoKey::~CryptoKey() {
 
 HCRYPTKEY CryptoKey::data() const { return key; }
 
-hmac_md5_t::hmac_md5_t(HCRYPTPROV prov, const std::string& password) 	
-	: key(prov, password)
-{
-	WIN32_BOOLCHECKED(CryptCreateHash(prov, CALG_HMAC, key.data(), 0, &hash));
-}
-
-hmac_md5_t::~hmac_md5_t() {
-	CryptDestroyHash(hash);
-}
-
-hmac_md5_t& hmac_md5_t::append(const std::vector<BYTE>& data) {
-	WIN32_BOOLCHECKED(CryptHashData(hash, data.data(), data.size(), 0));
-	return (*this);
-}
-
-std::vector<BYTE> hmac_md5_t::finish() {
-	const DWORD MD5HASHLEN = 16;
-	DWORD datalen = MD5HASHLEN;
-	std::vector<BYTE> result(MD5HASHLEN, 0);
-	WIN32_BOOLCHECKED(CryptGetHashParam(hash, HP_HASHVAL, &result[0], &datalen, 0));
-	if (MD5HASHLEN != datalen) { throw win32_exception(NTE_BAD_HASH); }
-	return result;
-}
 
 CryptoProvider::CryptoProvider() {
 	if (!CryptAcquireContextW(&prov, NULL, NULL, PROV_RSA_FULL, 0)) {

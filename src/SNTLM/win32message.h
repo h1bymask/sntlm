@@ -10,7 +10,10 @@ class win32_exception : public std::runtime_error {
 public:
 	explicit win32_exception(DWORD errorcode);
 
+	static void setCodePage(UINT codepage);
+
 private:
+	static UINT codepage;
 	static std::string generateWhat(DWORD errorcode);
 };
 
