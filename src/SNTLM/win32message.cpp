@@ -3,6 +3,20 @@
 
 #include <memory>
 
+
+win32_exception::win32_exception(DWORD errorcode) 
+	: std::runtime_error(generateWhat(errorcode))
+{ }	
+
+std::string win32_exception::generateWhat(DWORD errorcode) {
+	std::string result = GetWin32ErrorMessageA(errorcode);
+	result += " (";
+	result += numtostr(errorcode);
+	result += ")";
+	return result;
+}
+
+
 std::string GetWin32ErrorMessageA(DWORD error, UINT codepage) {
 	try {
 		return narrow(GetWin32ErrorMessageW(error), codepage);

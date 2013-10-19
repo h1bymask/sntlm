@@ -20,12 +20,18 @@
     <ClCompile Include="win32message.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="win32crypto.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="uconv.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="win32message.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="win32crypto.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,6 +6,16 @@
 
 #include <string>
 
+class win32_exception : public std::runtime_error {
+public:
+	explicit win32_exception(DWORD errorcode);
+
+private:
+	static std::string generateWhat(DWORD errorcode);
+};
+
+#define WIN32_BOOLCHECKED(c) do { if (!c) { DWORD err = GetLastError(); throw win32_exception(err); } } while(false);
+
 std::string GetWin32ErrorMessageA(DWORD error, UINT codepage = CP_UTF8);
 std::wstring GetWin32ErrorMessageW(DWORD error);
 

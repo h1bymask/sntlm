@@ -74,10 +74,12 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="uconv.cpp" />
+    <ClCompile Include="win32crypto.cpp" />
     <ClCompile Include="win32message.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="uconv.h" />
+    <ClInclude Include="win32crypto.h" />
     <ClInclude Include="win32message.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
