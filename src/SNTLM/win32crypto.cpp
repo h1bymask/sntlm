@@ -16,9 +16,9 @@ class PlainText_KeyBLOB {
 	};
 
 public:
-	PlainText_KeyBLOB(HCRYPTPROV prov, const std::string& key)
+	PlainText_KeyBLOB(HCRYPTPROV prov, const std::vector<BYTE>& key)
 		: blob(NULL)
-		, len(sizeof(data_t) + key.length())
+		, len(sizeof(data_t) + key.size())
 	{
 		blob = (data_t*)malloc(len);
 		if (!blob) { throw std::bad_alloc(); }
@@ -27,7 +27,7 @@ public:
 		blob->header.bType = PLAINTEXTKEYBLOB;
 		blob->header.bVersion = CUR_BLOB_VERSION;
 		blob->header.reserved = 0;
-		blob->keylen = key.length();
+		blob->keylen = key.size();
 		memcpy(blob->keydata, key.data(), blob->keylen);		
 	}
 
@@ -60,7 +60,11 @@ private:
 //
 //////////////////////////////////////////////////////////////////////////////
 
-CryptoKey::CryptoKey(HCRYPTPROV prov, const std::string& password)
+CryptoKey::CryptoKey() 
+	: key(NULL)
+{ }
+
+CryptoKey::CryptoKey(HCRYPTPROV prov, const std::vector<BYTE>& password)
 	: key(NULL)
 {
 	PlainText_KeyBLOB keyblob(prov, password);
@@ -101,68 +105,72 @@ HCRYPTKEY CryptoKey::data() const { return key; }
 
 //////////////////////////////////////////////////////////////////////////////
 //
-//	hmac_t
+//	hash_t
 //
 //////////////////////////////////////////////////////////////////////////////
 
-hmac_t::hmac_t(HCRYPTPROV prov, ALG_ID hash_alg, const CryptoKey& ___key)
+hash_t::hash_t(HCRYPTPROV prov, ALG_ID hash_alg, bool as_hmac, const CryptoKey& ___key)
 	: key(___key)
 	, hash(NULL)
 {
-	WIN32_BOOLCHECKED(CryptCreateHash(prov, CALG_HMAC, key.data(), 0, &hash));
+	WIN32_BOOLCHECKED(CryptCreateHash(prov, as_hmac ? CALG_HMAC : hash_alg, key.data(), 0, &hash));
 
-	HMAC_INFO hmacinfo;
-	hmacinfo.pbInnerString = NULL;
-	hmacinfo.cbInnerString = 0;
-	hmacinfo.pbOuterString = NULL;
-	hmacinfo.cbOuterString = 0;
-	hmacinfo.HashAlgid = hash_alg;
+	if (as_hmac) {
+		HMAC_INFO hmacinfo;
+		hmacinfo.pbInnerString = NULL;
+		hmacinfo.cbInnerString = 0;
+		hmacinfo.pbOuterString = NULL;
+		hmacinfo.cbOuterString = 0;
+		hmacinfo.HashAlgid = hash_alg;
 
-	WIN32_BOOLCHECKED(CryptSetHashParam(hash, HP_HMAC_INFO, (const BYTE*)&hmacinfo, 0));
+		WIN32_BOOLCHECKED(CryptSetHashParam(hash, HP_HMAC_INFO, (const BYTE*)&hmacinfo, 0));
+	}
 }
 
-void swap(hmac_t& first, hmac_t& second) {
+void swap(hash_t& first, hash_t& second) {
 	using std::swap;
 
 	swap(first.key, second.key);
 	swap(first.hash, second.hash);
 }
 
-hmac_t::hmac_t(hmac_t&& old)
+hash_t::hash_t(hash_t&& old)
 	: key(key)
 	, hash(NULL)
 {
 	swap(*this, old);
 }
 
-hmac_t::hmac_t(const hmac_t& old)
+hash_t::hash_t(const hash_t& old)
 	: key(key)
 	, hash(NULL)
 {
 	WIN32_BOOLCHECKED(CryptDuplicateHash(old.hash, NULL, 0, &hash));
 }
 
-hmac_t& hmac_t::operator=(hmac_t right) {
-	hmac_t temp(right);
+hash_t& hash_t::operator=(hash_t right) {
+	hash_t temp(right);
 	swap(*this, temp);
 	return (*this);
 }
 
-hmac_t::~hmac_t() {
+hash_t::~hash_t() {
 	CryptDestroyHash(hash);
 }
 
-hmac_t& hmac_t::append(const std::vector<BYTE>& data) {
+hash_t& hash_t::append(const std::vector<BYTE>& data) {
 	WIN32_BOOLCHECKED(CryptHashData(hash, data.data(), data.size(), 0));
 	return (*this);
 }
 
-std::vector<BYTE> hmac_t::finish() {
-	const DWORD MD5HASHLEN = 16;
-	DWORD datalen = MD5HASHLEN;
-	std::vector<BYTE> result(MD5HASHLEN, 0);
-	WIN32_BOOLCHECKED(CryptGetHashParam(hash, HP_HASHVAL, &result[0], &datalen, 0));
-	if (MD5HASHLEN != datalen) { throw win32_exception(NTE_BAD_HASH); }
+std::vector<BYTE> hash_t::finish() {
+	DWORD hashlen, hashlensize = sizeof(DWORD);
+
+	WIN32_BOOLCHECKED(CryptGetHashParam(hash, HP_HASHSIZE, (BYTE*)&hashlen, &hashlensize, 0));
+
+	std::vector<BYTE> result(hashlen, 0);
+
+	WIN32_BOOLCHECKED(CryptGetHashParam(hash, HP_HASHVAL, &result[0], &hashlen, 0));
 	return result;
 }
 
@@ -178,6 +186,26 @@ CryptoProvider::CryptoProvider()
 	WIN32_BOOLCHECKED(CryptAcquireContextW(&prov, NULL, NULL, PROV_RSA_FULL, 0));
 }
 
+void swap(CryptoProvider& left, CryptoProvider& right) {
+	using std::swap;
+
+	swap(left.prov, right.prov);	
+}
+
+CryptoProvider::CryptoProvider(CryptoProvider&& old)
+	: prov(NULL)
+{
+	swap(*this, old);
+}
+
 CryptoProvider::~CryptoProvider() {
 	CryptReleaseContext(prov, 0);
+}
+
+hash_t CryptoProvider::new_hmac_md5(const std::vector<BYTE>& password) const {
+	return hash_t(prov, CALG_MD5, true, CryptoKey(prov, password));
+}
+
+hash_t CryptoProvider::new_md4() const {
+	return hash_t(prov, CALG_MD4, false, CryptoKey());
 }

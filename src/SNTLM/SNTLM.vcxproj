@@ -75,11 +75,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ntlm.cpp" />
     <ClCompile Include="uconv.cpp" />
     <ClCompile Include="win32crypto.cpp" />
     <ClCompile Include="win32message.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ntlm.h" />
     <ClInclude Include="uconv.h" />
     <ClInclude Include="win32crypto.h" />
     <ClInclude Include="win32message.h" />

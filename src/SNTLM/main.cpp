@@ -7,7 +7,6 @@
 int wmain (int argc, wchar_t **argv) {
 	win32_exception::setCodePage(CP_OEMCP);
 	try {
-
 		std::string password, data;
 
 		std::cout << "HMAC-MD5" << std::endl;
@@ -20,7 +19,7 @@ int wmain (int argc, wchar_t **argv) {
 			std::cout << "\tEnter data: ";
 			std::getline(std::cin, data);
 
-			auto hash = provider.new_hmac_md5(password);
+			auto hash = provider.new_hmac_md5(std::vector<BYTE>(std::begin(password), std::end(password)));
 			std::vector<BYTE> result = hash.append(std::vector<BYTE>(std::begin(data), std::end(data))).finish();
 
 			std::cout << "Hash:\t\t" << std::hex;

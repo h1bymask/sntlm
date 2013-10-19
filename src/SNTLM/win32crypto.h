@@ -9,9 +9,11 @@
 
 #include "win32message.h"
 
+
 class CryptoKey {
 public:
-	CryptoKey(HCRYPTPROV prov, const std::string& password);
+	CryptoKey();
+	CryptoKey(HCRYPTPROV prov, const std::vector<BYTE>& password);
 	CryptoKey(const CryptoKey& right);
 	CryptoKey(CryptoKey&& old);
 	friend void swap(CryptoKey& left, CryptoKey& right);
@@ -20,44 +22,54 @@ public:
 	CryptoKey& operator=(CryptoKey right);
 
 	HCRYPTKEY data() const;
-private:
-	CryptoKey();
 
+private:
 	HCRYPTKEY key;
 };
 
-class hmac_t {
-public:
-	hmac_t(HCRYPTPROV prov, ALG_ID hash_alg, const CryptoKey& key);
-	friend void swap(hmac_t& first, hmac_t& second);
-	hmac_t(hmac_t&& old);
-	hmac_t(const hmac_t& old);
-	hmac_t& operator=(hmac_t right);
-	~hmac_t();
 
-	hmac_t& append(const std::vector<BYTE>& data);
+class hash_t {
+public:
+	hash_t(HCRYPTPROV prov, ALG_ID hash_alg, bool as_hmac, const CryptoKey& key);
+	friend void swap(hash_t& first, hash_t& second);
+	hash_t(hash_t&& old);
+	hash_t(const hash_t& old);
+	hash_t& operator=(hash_t right);
+	~hash_t();
+
+	hash_t& append(const std::vector<BYTE>& data);
 	std::vector<BYTE> finish();
 
 private:
-	hmac_t();
+	hash_t();
 
 	CryptoKey key;
 	HCRYPTHASH hash;
+	DWORD hash_len;
 };
+
 
 class CryptoProvider {
 public:
 	CryptoProvider();
+	friend void swap(CryptoProvider& left, CryptoProvider& right);
+	CryptoProvider(CryptoProvider&&);
 	~CryptoProvider();
 
-	hmac_t new_hmac_md5(const std::string& password) {
-		return hmac_t(prov, CALG_MD5, CryptoKey(prov, password));
-	}
+	hash_t new_hmac_md5(const std::vector<BYTE>& password) const;
+	hash_t new_md4() const;
+
 private:
-	CryptoProvider(const CryptoProvider&);
-	CryptoProvider& operator=(const CryptoProvider&);
+	CryptoProvider(const CryptoProvider&);	
+	CryptoProvider& operator=(const CryptoProvider);
 
 	HCRYPTPROV prov;
 };
+
+
+template <typename VectorLike>
+std::vector<BYTE> dump_memory(const VectorLike& v) {
+	return std::vector<BYTE>((const BYTE*)v.data(), (const BYTE*)(v.data() + v.size()));
+}
 
 #endif // _WIN32_CRYPTO_H_
