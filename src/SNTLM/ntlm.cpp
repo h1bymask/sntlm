@@ -1,7 +1,7 @@
 #include "ntlm.h"
 #include "uconv.h"
 
-std::vector<BYTE> NTOWFv2(const CryptoProvider& provider, std::wstring& password, const std::wstring& user, const std::wstring& domain) {
+std::vector<BYTE> NTLMOWFv2(const CryptoProvider& provider, std::wstring& password, const std::wstring& user, const std::string& domain) {
 	hash_t hmac_md5 = provider.new_hmac_md5(
 		provider.new_md4().append(dump_memory(password)).finish()
 	);
@@ -15,8 +15,60 @@ std::vector<BYTE> NTOWFv2(const CryptoProvider& provider, std::wstring& password
 		.finish();
 }
 
-std::vector<BYTE> LMOWFv2(const CryptoProvider& provider, std::wstring& password, const std::wstring& user, const std::wstring& domain) {
-	return NTOWFv2(provider, password, user, domain);
+
+ntlm_request_t::ntlm_request_t(const std::string& domain, const std::string& workstation)
+	: domain(domain)
+	, workstation(workstation)
+{
+	toUpper(this->domain);
+	toUpper(this->workstation);
+}
+
+ntlm_request_t::~ntlm_request_t() {
+}
+
+struct U32LE {
+public:
+	U32LE(DWORD x) : x(x) { }
+	~U32LE() { }
+	
+	friend std::ostream& operator<<(std::ostream& s, U32LE value);
+private:
+	DWORD x;
+};
+
+struct U16LE {
+public:
+	U16LE(WORD x) : x(x) { }
+	~U16LE() { }
+	
+	friend std::ostream& operator<<(std::ostream& s, U16LE value);
+private:
+	DWORD x;
+};
+
+
+std::ostream& operator<<(std::ostream& s, U32LE value) {
+	return
+	s	<< LOBYTE(LOWORD(value.x)) << HIBYTE(LOWORD(value.x))
+		<< LOBYTE(HIWORD(value.x)) << HIBYTE(HIWORD(value.x));
+}
+
+std::ostream& operator<<(std::ostream& s, U16LE value) {
+	return s << LOBYTE(LOWORD(value.x)) << HIBYTE(LOWORD(value.x));
+}
+
+std::ostream& operator<<(std::ostream& s, const ntlm_request_t& value) {
+	size_t dlen = value.domain.length(), hlen = value.workstation.length();
+	if ((dlen > MAXWORD) || (hlen > MAXWORD)) {
+		throw std::invalid_argument("Domain and/or workstation name is too long");
+	}
+
+	return
+	s	<< "NTLMSSP" << '\0' << U32LE(1UL) << U32LE(0xA208B205UL)  // this number is magical
+		<< U16LE(dlen) << U16LE(dlen) << U32LE(32 + hlen)
+		<< U16LE(hlen) << U16LE(hlen) << U32LE(32)
+		<< value.workstation << value.domain;
 }
 
 
