@@ -52,6 +52,11 @@ public:
 	}
 
 private:
+	TcpClientSocket();
+	TcpClientSocket(const TcpClientSocket&);
+	TcpClientSocket(TcpClientSocket&&);
+	TcpClientSocket& operator=(TcpClientSocket);
+
 	SOCKET s;
 };
 
