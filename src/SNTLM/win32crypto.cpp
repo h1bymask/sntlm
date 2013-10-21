@@ -147,7 +147,9 @@ hash_t::hash_t(const hash_t& old)
 	: key(key)
 	, hash(NULL)
 {
-	WIN32_BOOLCHECKED(CryptDuplicateHash(old.hash, NULL, 0, &hash));
+	if (old.hash) {
+		WIN32_BOOLCHECKED(CryptDuplicateHash(old.hash, NULL, 0, &hash));
+	}
 }
 
 hash_t& hash_t::operator=(hash_t right) {
