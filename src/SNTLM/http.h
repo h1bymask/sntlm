@@ -5,6 +5,7 @@
 #include "win32sockets.h"
 
 #include <map>
+#include <string>
 
 #include <algorithm>
 
@@ -50,7 +51,7 @@ public:
 		for (std::string line = buffer.getline(); !line.empty(); line = buffer.getline()) {
 			if (('\x20' == line[0]) || ('\t' == line[0])) {
 				auto last = raw_headers.rbegin();
-				if (headers.rend() == last) { throw http_exception("HTTP request can't start with a whitespace", http_exception::StatusBadRequest); }
+				if (raw_headers.rend() == last) { throw http_exception("HTTP request can't start with a whitespace", http_exception::StatusBadRequest); }
 				if (last->find(':') == std::string::npos) { throw http_exception("Header name can't reside on multiple lines", http_exception::StatusBadRequest); }
 				*last += line;
 			}
@@ -115,11 +116,11 @@ private:
 		version = std::string(version_begin, version_end);
 
 		std::string http_ver = "HTTP/";
-		if (strcmp(version.substr(0, http_ver.length()).c_str(), http_ver.c_str())) {
+		if (version.substr(0, http_ver.length()) == http_ver) {
 			throw http_exception("Invalid HTTP version", http_exception::StatusBadRequest);
 		}
 
-		if (strcmp(version.c_str(), "HTTP/1.1")) {
+		if (version != "HTTP/1.1") {
 			throw http_exception("Unsupported HTTP version", http_exception::StatusVersionNotSupported);
 		}
 	}
