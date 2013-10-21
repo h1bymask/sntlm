@@ -76,6 +76,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="http.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ntlm.cpp" />
     <ClCompile Include="uconv.cpp" />
@@ -84,6 +85,7 @@
     <ClCompile Include="win32sockets.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="http.h" />
     <ClInclude Include="ntlm.h" />
     <ClInclude Include="uconv.h" />
     <ClInclude Include="win32crypto.h" />

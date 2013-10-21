@@ -29,6 +29,9 @@
     <ClCompile Include="win32sockets.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="http.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="uconv.h">
@@ -44,6 +47,9 @@
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="win32sockets.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="http.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>
