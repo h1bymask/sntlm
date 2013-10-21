@@ -5,6 +5,12 @@
 #include <WS2tcpip.h>
 #include <algorithm>
 
+//////////////////////////////////////////////////////////////////////////////
+//
+//  TcpClientSocket
+//
+//////////////////////////////////////////////////////////////////////////////
+
 TcpClientSocket::TcpClientSocket(const std::string& hostname, USHORT port)
 	: s(INVALID_SOCKET)
 {
@@ -53,7 +59,7 @@ TcpClientSocket::~TcpClientSocket() {
 
 void TcpClientSocket::send(std::vector<BYTE>::const_iterator first, std::vector<BYTE>::const_iterator last) {
 	while (first != last) { 
-		int sent = ::send(s, (const char*)(first._Ptr), last - first, 0);
+		int sent = ::send(s, (const char*)(&*first), last - first, 0);
 		if (SOCKET_ERROR == sent) {
 			DWORD error = WSAGetLastError();
 			throw win32_exception(error);
@@ -74,6 +80,13 @@ std::vector<BYTE>::iterator TcpClientSocket::recv_upto(std::vector<BYTE>::iterat
 	return (first + recvd);
 }
 
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  WS32
+//
+//////////////////////////////////////////////////////////////////////////////
+
 WS32::WS32() {
 	DWORD error = WSAStartup(MAKEWORD(2, 2), &v);
 	if (error) {
@@ -84,6 +97,13 @@ WS32::WS32() {
 WS32::~WS32() {
 	WSACleanup();
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  SocketBuffer
+//
+//////////////////////////////////////////////////////////////////////////////
 
 SocketBuffer::SocketBuffer(TcpClientSocket& socket) 
 	: socket(socket)
