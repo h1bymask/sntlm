@@ -5,9 +5,10 @@
 #include <iomanip>
 
 #include "win32crypto.h"
+#include "win32sockets.h"
 #include "ntlm.h"
 
-std::ostream& operator<<(std::ostream& s, const std::vector<BYTE> value) {
+std::ostream& operator<<(std::ostream& s, const std::vector<BYTE>& value) {
 	struct z {
 		z(std::ostream& s) : str(s), fl(s.flags()) { }
 		~z() { str.flags(fl); }
@@ -17,7 +18,7 @@ std::ostream& operator<<(std::ostream& s, const std::vector<BYTE> value) {
 
 	s << std::hex << std::uppercase;
 	for (auto it = std::begin(value), eit = std::end(value); it != eit; ++it) {
-		s << std::setw(2) << std::setfill('0') << (int)(*it);
+		s << std::setw(2) << std::setfill('0') << (0xFF ^ (int)(*it));
 	}
 	return s;
 }
@@ -25,6 +26,12 @@ std::ostream& operator<<(std::ostream& s, const std::vector<BYTE> value) {
 int wmain (int argc, wchar_t **argv) {
 	win32_exception::setCodePage(CP_OEMCP);
 	try {
+		CryptoProvider provider;
+		std::string password;
+		std::getline(std::cin, password);
+
+		std::cout << NTLMOWFv2(provider, widen(password, CP_OEMCP), L"holodnov_sg_i", L"svadom") << std::endl;
+		/*
 		std::stringstream buffer;
 		ntlm_request_t req("TMG", "pc0048");
 
@@ -32,6 +39,26 @@ int wmain (int argc, wchar_t **argv) {
 		std::cout << dump_memory(buffer.str()) << std::endl;
 		std::cout << buffer.str() << std::endl;
 		std::cout << "171 == " << 0XABUL << "?" << std::endl;
+		*/
+		/*
+		WS32 _______;
+		
+		TcpClientSocket socket("127.0.0.1", 3128);
+
+		std::string http_request = "GET http://yandex.ru/ HTTP/1.1\r\nHost: yandex.ru\r\nConnection: close\r\n\r\n";
+		std::vector<BYTE> buff(std::begin(http_request), std::end(http_request));
+
+		socket.send(std::begin(buff), std::end(buff));
+
+//		std::vector<BYTE> response(8 * 1024, 0);
+//		auto last = std::end(response);
+//		for (auto it = std::begin(response), eit = std::end(response); it != last; last = it, it = socket.recv_upto(it, eit));
+
+		SocketBuffer response(socket);
+		for (std::string line = response.getline(); !line.empty(); line = response.getline()) {
+			std::cout << line << std::endl;
+		}
+		*/
 		/*
 		std::string password, data;
 

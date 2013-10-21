@@ -114,3 +114,10 @@ std::string numtostr(size_t num) {
 	result.resize(len > 0 ? len : 0);
 	return result;
 }
+
+std::string numtostr(USHORT num) {
+	std::string result(6, '\0');
+	int len = _snprintf(&result[0], result.length(), "%hu", num);
+	result.resize(len > 0 ? len : 0);
+	return result;
+}

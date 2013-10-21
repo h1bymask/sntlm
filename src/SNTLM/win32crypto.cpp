@@ -75,7 +75,9 @@ CryptoKey::CryptoKey(HCRYPTPROV prov, const std::vector<BYTE>& password)
 CryptoKey::CryptoKey(const CryptoKey& right)
 	: key(NULL)
 {
-	WIN32_BOOLCHECKED(CryptDuplicateKey(right.key, NULL, 0, &key));
+	if (right.key) {
+		WIN32_BOOLCHECKED(CryptDuplicateKey(right.key, NULL, 0, &key));
+	}
 }
 
 CryptoKey::CryptoKey(CryptoKey&& old)

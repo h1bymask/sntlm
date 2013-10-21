@@ -3,8 +3,12 @@
 #define _WIN32_SOCKETS_H_
 
 #include "win32message.h"
+#include "uconv.h"
 
 #include <WinSock2.h>
+
+#include <WS2tcpip.h>
+#include <algorithm>
 
 #include <vector>
 
@@ -13,29 +17,57 @@ public:
 	TcpClientSocket(const std::string& hostname, USHORT port)
 		: s(INVALID_SOCKET)
 	{
-		s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		s = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (INVALID_SOCKET == s) {
+			DWORD error = WSAGetLastError();
+			throw win32_exception(error);
+		}
+
+		addrinfo hint, *result;
+		ZeroMemory(&hint, sizeof(hint));
+		hint.ai_family = AF_INET;
+		hint.ai_socktype = SOCK_STREAM;
+		hint.ai_protocol = IPPROTO_TCP;
+		if (GetAddrInfoA(hostname.c_str(), numtostr(port).c_str(), &hint, &result)) {
+			DWORD error = WSAGetLastError();
+			throw win32_exception(error);
+		}
+
+		std::unique_ptr<addrinfo, decltype(&::freeaddrinfo)> resultholder(result, ::freeaddrinfo);
+
+		sockaddr_in addr = *(sockaddr_in*)result->ai_addr;
+
+		if (SOCKET_ERROR == ::connect(s, (sockaddr*)&addr, sizeof(sockaddr_in))) {
 			DWORD error = WSAGetLastError();
 			throw win32_exception(error);
 		}
 	}
 
-	~TcpClientSocket() {
-		shutdown(s, SD_BOTH);
-		closesocket(s);
+	friend void swap(TcpClientSocket& left, TcpClientSocket& right) {
+		using std::swap;
+
+		swap(left.s, right.s);
 	}
 
-	void send(const std::vector<BYTE>& data) {
-		size_t tosend = data.size(), allsent = 0;
+	TcpClientSocket(TcpClientSocket&& old)
+		: s(INVALID_SOCKET)
+	{
+		swap(*this, old);
+	}
 
-		while (tosend) { 
-			int sent = ::send(s, (const char*)(data.data()) + allsent, tosend, 0);
+	~TcpClientSocket() {
+		::shutdown(s, SD_BOTH);
+		::closesocket(s);
+	}
+
+	void send(std::vector<BYTE>::const_iterator first, std::vector<BYTE>::const_iterator last) {
+		while (first != last) { 
+			int sent = ::send(s, (const char*)(first._Ptr), last - first, 0);
 			if (SOCKET_ERROR == sent) {
 				DWORD error = WSAGetLastError();
 				throw win32_exception(error);
 			}
-			tosend -= sent;
-			allsent += sent;
+			first += sent;
 		}
 	}
 
@@ -54,7 +86,6 @@ public:
 private:
 	TcpClientSocket();
 	TcpClientSocket(const TcpClientSocket&);
-	TcpClientSocket(TcpClientSocket&&);
 	TcpClientSocket& operator=(TcpClientSocket);
 
 	SOCKET s;
@@ -79,6 +110,77 @@ private:
 	WS32& operator=(WS32);
 
 	WSADATA v;
+};
+
+class SocketBuffer {
+public:
+	SocketBuffer(TcpClientSocket& socket) 
+		: socket(socket)
+		, buffer(8 * 1024, 0)
+		, last(std::begin(buffer))
+	{ }
+
+	~SocketBuffer() { }
+
+	std::string getline() {
+		std::string result;
+
+		auto crpos = std::find(std::begin(buffer), last, '\r');
+		if (crpos == last) {
+			// No CR were in the buffer
+			result.append(std::begin(buffer), last);
+
+			last = socket.recv_upto(std::begin(buffer), std::end(buffer));
+			if (std::begin(buffer) == last) {
+				// EOF was reached before CRLF
+				throw std::runtime_error("Premature EOF");
+			}
+
+			result += getline();
+			return result;
+		}
+		else {
+			// We've seen a CR. Is there an LF right after it?
+			auto lfpos = crpos;
+			++lfpos;
+
+			if (std::end(buffer) == lfpos) {
+				// Well, we have to recv to find out! But let's not remove the CR from the buffer
+				result.append(std::begin(buffer), crpos);
+				last = std::copy(crpos, last, std::begin(buffer));
+
+				last = socket.recv_upto(last, std::end(buffer));
+				result += getline();
+				return result;
+			}
+			if ('\n' == *lfpos) {
+				// Yes, CRLF combination found
+				result.append(std::begin(buffer), crpos);
+
+				// Now we remove the line and CRLF from the buffer
+				++lfpos;
+				last = std::copy(lfpos, last, std::begin(buffer));
+
+				// That's the final result
+				return result;
+			}
+			else {
+				// Nah, just a lonely CR. Include it in
+				result.append(std::begin(buffer), lfpos);
+
+				// Now remove from the buffer what we included and move on
+				last = std::copy(lfpos, last, std::begin(buffer));
+
+				result += getline();
+				return result;
+			}
+		}
+	}
+
+private:
+	TcpClientSocket& socket;
+	std::vector<BYTE> buffer;
+	std::vector<BYTE>::iterator last;
 };
 
 #endif // _WIN32_SOCKETS_H_

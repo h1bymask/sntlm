@@ -1,17 +1,17 @@
 #include "ntlm.h"
 #include "uconv.h"
 
-std::vector<BYTE> NTLMOWFv2(const CryptoProvider& provider, std::wstring& password, const std::wstring& user, const std::string& domain) {
+std::vector<BYTE> NTLMOWFv2(const CryptoProvider& provider, std::wstring& password, const std::wstring& user, const std::wstring& domain) {
 	hash_t hmac_md5 = provider.new_hmac_md5(
 		provider.new_md4().append(dump_memory(password)).finish()
 	);
 
-	std::wstring upcase_user(user);
-	toUpper(upcase_user);
+	std::wstring upcase_user(user), upcase_domain(domain);
+	toUpper(upcase_user), toUpper(upcase_domain);
 
 	return hmac_md5
 		.append(dump_memory(upcase_user))
-		.append(dump_memory(domain))
+		.append(dump_memory(upcase_domain))
 		.finish();
 }
 

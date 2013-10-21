@@ -30,5 +30,6 @@ void toLower(std::wstring& string);
 
 std::string numtostr(DWORD num);
 std::string numtostr(size_t num);
+std::string numtostr(USHORT num);
 
 #endif //_UCONV_H_
