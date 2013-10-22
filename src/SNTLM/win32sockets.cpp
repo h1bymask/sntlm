@@ -1,7 +1,7 @@
 #include "win32sockets.h"
 
 #include "win32message.h"
-#include "uconv.h"
+#include "numconv.h"
 #include <WS2tcpip.h>
 #include <algorithm>
 
@@ -165,5 +165,46 @@ std::string SocketBuffer::getline() {
 			result += getline();
 			return result;
 		}
+	}
+}
+
+std::string SocketBuffer::getbuffer() const {
+	return std::string(std::begin(buffer), std::vector<BYTE>::const_iterator(last));
+}
+
+std::string SocketBuffer::getcount(size_t byte_count) {
+	std::string result;
+	if (!byte_count) { return result; }
+
+	size_t buffpresent = last - std::begin(buffer);
+
+	if (byte_count <= buffpresent) {
+		result = std::string(std::begin(buffer), std::begin(buffer) + byte_count);
+		last = std::copy(std::begin(buffer) + byte_count, last, std::begin(buffer));
+		return result;
+	}
+	else {
+		result = getbuffer();
+		last = socket.recv_upto(std::begin(buffer), std::end(buffer));
+		if (std::begin(buffer) == last) { throw std::runtime_error("Premature EOF"); }
+		return result + getcount(byte_count - buffpresent);
+	}
+}
+
+std::string SocketBuffer::getchunk() {
+	std::string chunksize_raw = getline();
+	DWORD chunksize = 0;
+	if (strtonum(chunksize_raw, chunksize)) {
+		if (chunksize) {
+			std::string result = getcount(chunksize);
+			if (!getline().empty()) { throw std::runtime_error("CRLF after chunk-data was expected"); }
+			return result;
+		}
+		else {
+			return "";
+		}
+	}
+	else {
+		throw std::runtime_error("Invalid chunk-size");
 	}
 }

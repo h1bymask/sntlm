@@ -1,5 +1,6 @@
 #include "win32message.h"
-#include "uconv.h"
+#include "uniconv.h"
+#include "numconv.h"
 
 #include <memory>
 
@@ -26,7 +27,7 @@ std::string GetWin32ErrorMessageA(DWORD error, UINT codepage) {
 	try {
 		return narrow(GetWin32ErrorMessageW(error), codepage);
 	}
-	catch (uconv_error&) {
+	catch (uniconv_error&) {
 		return std::string();
 	}
 }

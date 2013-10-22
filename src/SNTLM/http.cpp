@@ -1,6 +1,7 @@
 #include "http.h"
 
-#include "uconv.h"
+#include "uniconv.h"
+#include "numconv.h"
 
 #include <algorithm>
 
@@ -16,10 +17,10 @@ http_exception::http_exception(const std::string& m)
 HttpResponse::HttpResponse(TcpClientSocket& socket)
 	: buffer(socket)
 {
-	std::string requestline = buffer.getline();
-	if (requestline.empty()) { throw http_exception("Empty response"); }
+	raw_statusline = buffer.getline();
+	if (raw_statusline.empty()) { throw http_exception("Empty response"); }
 
-	parseResponseLine(requestline);
+	parseResponseLine(raw_statusline);
 
 	std::vector<std::string> raw_headers;
 	for (std::string line = buffer.getline(); !line.empty(); line = buffer.getline()) {
@@ -39,6 +40,12 @@ HttpResponse::HttpResponse(TcpClientSocket& socket)
 
 HttpResponse::~HttpResponse() {
 }
+
+const std::map<std::string, std::string>& HttpResponse::getHeaders() const { return headers; }
+const std::string& HttpResponse::getStatusLine() const { return raw_statusline; }
+HttpResponse::status_code HttpResponse::getStatusCode() const { return status; }
+SocketBuffer& HttpResponse::getBuffer() { return buffer; }
+
 
 void HttpResponse::parseHeaders(const std::vector<std::string>& raw_headers) {
 	for (auto it = std::begin(raw_headers), eit = std::end(raw_headers); it != eit; ++it) {
@@ -106,7 +113,7 @@ void HttpResponse::parseResponseLine(const std::string& reqline) {
 	while ((sel_end != reqline_end) && ('\x20' != *sel_end)) { ++sel_end; }
 	if (sel_end == reqline_end) { throw http_exception("Status code is absent"); }
 	version = std::string(sel_begin, sel_end);
-	if ((version != "HTTP/1.0") ||(version != "HTTP/1.1")) {
+	if ((version != "HTTP/1.0") && (version != "HTTP/1.1")) {
 		throw http_exception("Unsupported HTTP version");
 	}
 
@@ -118,7 +125,10 @@ void HttpResponse::parseResponseLine(const std::string& reqline) {
 	if ('\x20' == *sel_end) { throw http_exception("Multiple spaces are not allowed in status line"); }
 	while ((sel_end != reqline_end) && ('\x20' != *sel_end)) { ++sel_end; }
 	if (sel_end == reqline_end) { throw http_exception("Reason phrase is absent"); }
-	status = std::string(sel_begin, sel_end);
+	std::string status_raw = std::string(sel_begin, sel_end);
+	if (!strtonum(status_raw, status) &&  ((status < 100) || (status > 999))) {
+		throw http_exception("Invalid status"); 
+	}
 	
 	sel_begin = sel_end;
 	++sel_begin;
@@ -127,7 +137,10 @@ void HttpResponse::parseResponseLine(const std::string& reqline) {
 }
 
 void HttpResponse::canonicalizeHeaderName(std::string& headername) {
-	for (auto it = std::begin(headername), eit = std::end(headername); it != eit; it = ++std::find(it, eit, '-')) {
-		*it = toupper(*it);
+	for (size_t i = 0; i < headername.length(); ) {
+		headername[i] = toupper(headername[i]);
+
+		i = headername.find('-', i);
+		i = (std::string::npos == i) ? headername.length() : i + 1;
 	}
 }

@@ -25,6 +25,13 @@ public:
 	HttpResponse(TcpClientSocket& socket);		
 	~HttpResponse();
 
+	const std::map<std::string, std::string>& getHeaders() const;
+	const std::string& getStatusLine() const;
+	status_code getStatusCode() const;
+	SocketBuffer& getBuffer();
+
+	static const size_t nlen = (size_t)(-1);
+	size_t getContentLength() const;
 private:
 	HttpResponse(const HttpResponse&);
 	HttpResponse(HttpResponse&&);
@@ -36,7 +43,9 @@ private:
 	void canonicalizeHeaderName(std::string& headername);
 
 	SocketBuffer buffer;
-	std::string version, status, reason;
+	std::string raw_statusline, version;
+	status_code status;
+	std::string reason;
 	std::map<std::string, std::string> headers;
 };
 

@@ -1,17 +1,16 @@
 #pragma once
-#ifndef _UCONV_H_
-#define _UCONV_H_
+#ifndef _UNI_CONV_H_
+#define _UNI_ONV_H_
 
 #include <Windows.h>
 
 #include <string>
-#include <stdexcept>
 #include <type_traits>
 
-class uconv_error : public std::runtime_error {
+class uniconv_error : public std::runtime_error {
 public:
-	explicit uconv_error(const std::string& s);
-	explicit uconv_error(const char* s);
+	explicit uniconv_error(const std::string& s);
+	explicit uniconv_error(const char* s);
 };
 
 std::wstring widen(const std::string& string, UINT codepage = CP_UTF8);
@@ -26,13 +25,7 @@ void toLower(std::string& string, UINT codepage = CP_UTF8);
 void toUpper(std::wstring& string);
 void toLower(std::wstring& string);
 
-
-
-std::string numtostr(DWORD num);
-std::string numtostr(size_t num);
-std::string numtostr(USHORT num);
-
 bool ishtsp(char c);
 void trim(std::string& s);
 
-#endif //_UCONV_H_
+#endif //_UNI_CONV_H_

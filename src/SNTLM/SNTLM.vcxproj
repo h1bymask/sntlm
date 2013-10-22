@@ -79,7 +79,8 @@
     <ClCompile Include="http.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ntlm.cpp" />
-    <ClCompile Include="uconv.cpp" />
+    <ClCompile Include="numconv.cpp" />
+    <ClCompile Include="uniconv.cpp" />
     <ClCompile Include="win32crypto.cpp" />
     <ClCompile Include="win32message.cpp" />
     <ClCompile Include="win32sockets.cpp" />
@@ -87,7 +88,8 @@
   <ItemGroup>
     <ClInclude Include="http.h" />
     <ClInclude Include="ntlm.h" />
-    <ClInclude Include="uconv.h" />
+    <ClInclude Include="numconv.h" />
+    <ClInclude Include="uniconv.h" />
     <ClInclude Include="win32crypto.h" />
     <ClInclude Include="win32message.h" />
     <ClInclude Include="win32sockets.h" />

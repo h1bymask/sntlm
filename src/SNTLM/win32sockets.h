@@ -42,7 +42,9 @@ public:
 	~SocketBuffer();
 
 	std::string getline();
-
+	std::string getcount(size_t byte_count);
+	std::string getchunk();
+	std::string getbuffer() const;
 private:
 	SocketBuffer();
 	SocketBuffer(const SocketBuffer&);

@@ -1,13 +1,14 @@
-#include "uconv.h"
+#include "uniconv.h"
+#include "numconv.h"
 
 #include <memory>
 #include <algorithm>
 
-uconv_error::uconv_error(const std::string& s)
+uniconv_error::uniconv_error(const std::string& s)
 	: std::runtime_error(s)
 { }
 
-uconv_error::uconv_error(const char* s) 
+uniconv_error::uniconv_error(const char* s) 
 	: std::runtime_error(s)
 { }
 
@@ -34,7 +35,7 @@ OutStr doconversion(const InChar *string, size_t length, UINT codepage, ConvFunc
 	int reqlen = conv(codepage, 0, string, length, NULL, 0);
 	if (!reqlen) {
 		DWORD error = GetLastError();
-		throw uconv_error("Conversion error: " + numtostr(error));
+		throw uniconv_error("Conversion error: " + numtostr(error));
 	}
 
 	OutStr result(reqlen, L'\0');
@@ -42,10 +43,10 @@ OutStr doconversion(const InChar *string, size_t length, UINT codepage, ConvFunc
 
 	if (!len) {
 		DWORD error = GetLastError();
-		throw uconv_error("Conversion error: " + numtostr(error));
+		throw uniconv_error("Conversion error: " + numtostr(error));
 	}
 	if (len != reqlen) {
-		throw uconv_error("String was misconverted");
+		throw uniconv_error("String was misconverted");
 	}
 
 	return result;
@@ -73,7 +74,7 @@ std::string narrow(const wchar_t *string, size_t length, UINT codepage) {
 template <typename Func>
 void inplaceW(std::wstring& string, Func func) {
 	if (string.length() > MAXDWORD) {
-		throw uconv_error("String too long");
+		throw uniconv_error("String too long");
 	}
 	func(&string[0], string.length());
 }
@@ -99,28 +100,6 @@ void toUpper(std::wstring& string) {
 
 void toLower(std::wstring& string) {
 	return inplaceW(string, CharLowerBuffW);
-}
-
-
-std::string numtostr(DWORD num) {
-	std::string result(10, '\0');
-	int len = _snprintf(&result[0], result.length(), "%lu", num);
-	result.resize(len > 0 ? len : 0);
-	return result;
-}
-
-std::string numtostr(size_t num) {
-	std::string result(25, '\0');
-	int len = _snprintf(&result[0], result.length(), "%lu", num);
-	result.resize(len > 0 ? len : 0);
-	return result;
-}
-
-std::string numtostr(USHORT num) {
-	std::string result(6, '\0');
-	int len = _snprintf(&result[0], result.length(), "%hu", num);
-	result.resize(len > 0 ? len : 0);
-	return result;
 }
 
 
