@@ -32,4 +32,7 @@ std::string numtostr(DWORD num);
 std::string numtostr(size_t num);
 std::string numtostr(USHORT num);
 
+bool ishtsp(char c);
+void trim(std::string& s);
+
 #endif //_UCONV_H_

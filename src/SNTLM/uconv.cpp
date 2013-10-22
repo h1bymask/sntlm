@@ -1,6 +1,7 @@
 #include "uconv.h"
 
 #include <memory>
+#include <algorithm>
 
 uconv_error::uconv_error(const std::string& s)
 	: std::runtime_error(s)
@@ -120,4 +121,14 @@ std::string numtostr(USHORT num) {
 	int len = _snprintf(&result[0], result.length(), "%hu", num);
 	result.resize(len > 0 ? len : 0);
 	return result;
+}
+
+
+bool ishtsp(char c) {
+	return ('\x20' == c) || ('\t' == c);
+}
+	
+void trim(std::string& s) {
+	s.erase(s.begin(), std::find_if_not(s.begin(), s.end(), ishtsp));
+	s.erase(std::find_if_not(s.rbegin(), s.rend(), ishtsp).base(), s.end());
 }
