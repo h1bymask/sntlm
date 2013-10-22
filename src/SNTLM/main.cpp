@@ -9,7 +9,8 @@
 #include "win32sockets.h"
 #include "ntlm.h"
 #include "http.h"
-#include <boost\lexical_cast.hpp>
+#include "base64.h"
+
 
 template <typename T>
 bool testone(T x) {
@@ -116,17 +117,25 @@ int wmain (int argc, wchar_t **argv) {
 		WS32 _______;
 
 		TcpClientSocket socket("10.12.0.60", 8080);
+		ntlm_request_t request("TMG", "PC0048");
+
+		std::stringstream temp;
+		temp << request;
+		std::string temps = temp.str();
 
 		std::string http_request = 
 			"GET http://www.yandex.ru/ HTTP/1.1\r\n"
 			"Host: www.yandex.ru\r\n"
 			"Connection: close\r\n"
-			//"Proxy-Authorization: NTLM "
+			"Proxy-Authorization: NTLM " +	base64_encode(std::vector<BYTE>(std::begin(temps), std::end(temps))) + "\r\n"
 			"\r\n"
 			;
 
-		std::vector<BYTE> buff(std::begin(http_request), std::end(http_request));
+		std::cout << http_request << "======END OF REQUEST======" << std::endl;
+				
 
+		std::vector<BYTE> buff(std::begin(http_request), std::end(http_request));
+		
 		socket.send(std::begin(buff), std::end(buff));
 
 		//		std::vector<BYTE> response(8 * 1024, 0);

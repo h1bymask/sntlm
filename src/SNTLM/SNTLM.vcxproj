@@ -86,6 +86,7 @@
     <ClCompile Include="win32sockets.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="base64.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="ntlm.h" />
     <ClInclude Include="numconv.h" />
