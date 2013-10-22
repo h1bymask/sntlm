@@ -21,7 +21,7 @@ bool testone(T x) {
 		a = boost::lexical_cast<T, std::string>(s);
 		lf = false;
 	}
-	catch (boost::bad_lexical_cast& e) {
+	catch (boost::bad_lexical_cast&) {
 		lf = true;
 	}
 
@@ -45,7 +45,7 @@ bool testone(T x) {
 
 template <typename T>
 bool test() {
-	T u;
+	T u; u;  
 	std::cout << "Testing " << typeid(u).name() << "..." << std::endl;
 	bool not_yet = true, result = true;
 
@@ -79,7 +79,7 @@ std::ostream& operator<<(std::ostream& s, const std::vector<BYTE>& value) {
 
 int wmain (int argc, wchar_t **argv) {
 	win32_exception::setCodePage(CP_OEMCP);
-	try {
+	try {/*
 		std::cout << std::boolalpha;
 		std::cout << test<short>() << std::endl;
 		std::cout << test<signed short>() << std::endl;
@@ -95,7 +95,7 @@ int wmain (int argc, wchar_t **argv) {
 		std::cout << test<unsigned long long>() << std::endl;
 
 		return 0;
-
+		*/
 		/*
 		CryptoProvider provider;
 		std::string password;
@@ -121,6 +121,7 @@ int wmain (int argc, wchar_t **argv) {
 			"GET http://www.yandex.ru/ HTTP/1.1\r\n"
 			"Host: www.yandex.ru\r\n"
 			"Connection: close\r\n"
+			//"Proxy-Authorization: NTLM "
 			"\r\n"
 			;
 
@@ -135,17 +136,33 @@ int wmain (int argc, wchar_t **argv) {
 		std::cout << narrow(widen(response.getStatusLine(), CP_UTF8), CP_OEMCP) << std::endl;
 		auto headers = response.getHeaders();
 		for (auto it = std::begin(headers), eit = std::end(headers); it != eit; ++it) {
-			std::cout << it->first << ": " << it->second << std::endl;
-		}		
+			for (auto vit = std::begin(it->second), veit = std::end(it->second); vit != veit; ++vit) {
+				std::cout << it->first << ": " << *vit << std::endl;
+			}
+		}
 		std::cout << "======END OF HEADERS======" << std::endl;
 
-		std::cout << response.getBuffer().getbuffer();
-		std::cout << "||" << std::endl;
-
-		buff.resize(8 * 1024, 0);
-		for (auto last = socket.recv_upto(std::begin(buff), std::end(buff));
-			last != std::begin(buff); last = socket.recv_upto(std::begin(buff), std::end(buff))) {
-				std::cout << std::string(std::begin(buff), last);
+		auto& buffer = response.getBuffer();
+		if (response.getIsChunked()) {
+			std::cout << "[[CHUNKED ENCODING]]" << std::endl;
+			for (auto chunk = buffer.getchunk(); !chunk.empty(); chunk = buffer.getchunk()) {
+				std::cout << chunk;
+			}
+			std::cout << "[[TRAILING HEADERS]]" << std::endl;
+			for (auto th = buffer.getline(); !th.empty(); th = buffer.getline()) {
+				std::cout << th << std::endl;
+			}
+		}
+		else if (HttpResponse::nlen != response.getContentLength()) {
+			std::cout << "[[EXACTLY " << response.getContentLength() << " BYTES]]" << std::endl;
+			std::cout << buffer.getcount(response.getContentLength()) << std::endl;
+		}
+		else {
+			buff.resize(8 * 1024, 0);
+			for (auto last = socket.recv_upto(std::begin(buff), std::end(buff));
+				last != std::begin(buff); last = socket.recv_upto(std::begin(buff), std::end(buff))) {
+					std::cout << std::string(std::begin(buff), last);
+			}
 		}
 		std::cout << std::endl << "======END OF RESPONSE======" << std::endl;
 

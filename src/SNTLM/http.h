@@ -16,6 +16,9 @@ public:
 class HttpResponse {
 public:
 	typedef USHORT status_code;
+	typedef std::map<std::string, std::vector<std::string>> headers_t;
+
+	static const UINT CP_ISO8859_1 = 28591;
 
 	static const status_code StatusOK					= 200;
 	static const status_code StatusBadRequest			= 400;
@@ -25,13 +28,15 @@ public:
 	HttpResponse(TcpClientSocket& socket);		
 	~HttpResponse();
 
-	const std::map<std::string, std::string>& getHeaders() const;
+	const headers_t& getHeaders() const;
 	const std::string& getStatusLine() const;
 	status_code getStatusCode() const;
 	SocketBuffer& getBuffer();
 
 	static const size_t nlen = (size_t)(-1);
+
 	size_t getContentLength() const;
+	bool getIsChunked() const;
 private:
 	HttpResponse(const HttpResponse&);
 	HttpResponse(HttpResponse&&);
@@ -46,7 +51,10 @@ private:
 	std::string raw_statusline, version;
 	status_code status;
 	std::string reason;
-	std::map<std::string, std::string> headers;
+	headers_t headers;
+
+	bool ischunked;
+	size_t contentlength;
 };
 
 #endif //_HTTP_H_

@@ -98,9 +98,12 @@ strtonum(const std::string& s, T& num, numconv::numconv_base base = numconv::bas
 	if (std::is_unsigned<T>::value) { num = result; return true; }
 
 	if (hassign) {
+#pragma warning(push)
+#pragma warning(disable:4146)
 		UT limit = static_cast<UT>(-(std::numeric_limits<T>::min()));
 		if (result > limit) { return false; }
 		num = static_cast<T>(-result);
+#pragma warning(pop)
 		return true;
 	}
 	else {

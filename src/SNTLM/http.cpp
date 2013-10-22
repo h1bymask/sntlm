@@ -16,6 +16,8 @@ http_exception::http_exception(const std::string& m)
 
 HttpResponse::HttpResponse(TcpClientSocket& socket)
 	: buffer(socket)
+	, ischunked(false)
+	, contentlength(nlen)
 {
 	raw_statusline = buffer.getline();
 	if (raw_statusline.empty()) { throw http_exception("Empty response"); }
@@ -41,10 +43,12 @@ HttpResponse::HttpResponse(TcpClientSocket& socket)
 HttpResponse::~HttpResponse() {
 }
 
-const std::map<std::string, std::string>& HttpResponse::getHeaders() const { return headers; }
+const HttpResponse::headers_t& HttpResponse::getHeaders() const { return headers; }
 const std::string& HttpResponse::getStatusLine() const { return raw_statusline; }
 HttpResponse::status_code HttpResponse::getStatusCode() const { return status; }
 SocketBuffer& HttpResponse::getBuffer() { return buffer; }
+bool HttpResponse::getIsChunked() const { return ischunked; }
+size_t HttpResponse::getContentLength() const { return contentlength; }
 
 
 void HttpResponse::parseHeaders(const std::vector<std::string>& raw_headers) {
@@ -60,14 +64,42 @@ void HttpResponse::parseHeaders(const std::vector<std::string>& raw_headers) {
 
 		if (value.empty()) { throw http_exception("Header must have value"); }
 
-		if (headers.end() == headers.find(key)) {
-			headers[key] = value;
-		}
-		else {
-			headers[key] += ",";
-			headers[key] += value;
+		auto& d = headers[key];
+		d.insert(std::end(d), value);
+	}
+
+	auto transfer_encoding = headers.find("Transfer-Encoding");
+	if (std::end(headers) != transfer_encoding) {
+		std::string lastencoding = *transfer_encoding->second.rbegin();
+		toLower(lastencoding, CP_ISO8859_1);
+		if ("chunked" != lastencoding) { throw http_exception("\"chunked\" must be the last transfer encoding applied to the message"); }
+		ischunked = true;
+		return;
+	}
+
+	// "Transfer-Encoding: chunked" is not present
+	auto content_length = headers.find("Content-Length");
+	if (std::end(headers) != content_length) {
+		if (content_length->second.size() > 1) { throw http_exception("Multiple Content-Length headers are not allowed"); }
+		
+		size_t temp;
+		if (!strtonum(*content_length->second.begin(), temp) || nlen == temp) { throw http_exception("Invalid Content-Length"); }
+		contentlength = temp;
+		return;
+	}
+
+	// Neither "Transfer-Endcoding: chunked" nor valid Content-Length are present
+	auto connection = headers.find("Connection");
+	if (std::end(headers) != connection) {	
+		for (auto it = std::begin(connection->second), eit = std::end(connection->second); it != eit; ++it) {
+			std::string temp = *it;
+			toLower(temp, CP_ISO8859_1);
+			if (temp == "close") { return; }
 		}
 	}
+
+	// Neither "Transfer-Endcoding: chunked", valid Content-Length, nor "Connection: close" are present -- that's malformed HTTP/1.1 response
+	throw http_exception("Can't obtain message length");	
 }
 
 /*
