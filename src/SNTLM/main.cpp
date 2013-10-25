@@ -80,40 +80,7 @@ std::ostream& operator<<(std::ostream& s, const std::vector<BYTE>& value) {
 
 int wmain (int argc, wchar_t **argv) {
 	win32_exception::setCodePage(CP_OEMCP);
-	try {/*
-		std::cout << std::boolalpha;
-		std::cout << test<short>() << std::endl;
-		std::cout << test<signed short>() << std::endl;
-		std::cout << test<unsigned short>() << std::endl;
-		std::cout << test<int>() << std::endl;
-		std::cout << test<signed int>() << std::endl;
-		std::cout << test<unsigned int>() << std::endl;
-		std::cout << test<long>() << std::endl;
-		std::cout << test<signed long>() << std::endl;
-		std::cout << test<unsigned long>() << std::endl;
-		std::cout << test<long long>() << std::endl;
-		std::cout << test<signed long long>() << std::endl;
-		std::cout << test<unsigned long long>() << std::endl;
-
-		return 0;
-		*/
-		/*
-		CryptoProvider provider;
-		std::string password;
-		std::getline(std::cin, password);
-
-		std::cout << NTLMOWFv2(provider, widen(password, CP_OEMCP), L"holodnov_sg_i", L"svadom") << std::endl;
-		*/
-		/*
-		std::stringstream buffer;
-		ntlm_request_t req("TMG", "pc0048");
-
-		buffer << req;
-		std::cout << dump_memory(buffer.str()) << std::endl;
-		std::cout << buffer.str() << std::endl;
-		std::cout << "171 == " << 0XABUL << "?" << std::endl;
-		*/
-
+	try {
 		WS32 _______;
 
 		TcpClientSocket socket("10.12.0.60", 8080);
@@ -122,12 +89,12 @@ int wmain (int argc, wchar_t **argv) {
 		std::stringstream temp;
 		temp << request;
 		std::string temps = temp.str();
-
+		
 		std::string http_request = 
 			"GET http://www.yandex.ru/ HTTP/1.1\r\n"
 			"Host: www.yandex.ru\r\n"
 			"Connection: close\r\n"
-			"Proxy-Authorization: NTLM " +	base64_encode(std::vector<BYTE>(std::begin(temps), std::end(temps))) + "\r\n"
+			"Proxy-Authorization: NTLM " +	base64_encode<std::string::const_iterator>(std::begin(temps), std::end(temps)) + "\r\n"
 			"\r\n"
 			;
 
@@ -174,6 +141,24 @@ int wmain (int argc, wchar_t **argv) {
 			}
 		}
 		std::cout << std::endl << "======END OF RESPONSE======" << std::endl;
+
+		auto proxyauth = headers.find("Proxy-Authenticate");
+		if (std::end(headers) == proxyauth) {
+			std::cout << "Expected a Proxy-Authenticate header in response" << std::endl;
+			return 1;
+		}
+		if (proxyauth->second.size() > 1) {
+			std::cout << "Multiple Proxy-Authenticate headers are not allowed" << std::endl;
+			return 2;
+		}
+		if (proxyauth->second.begin()->substr(0, 5) != "NTLM ") {
+			std::cout << "Expected NTLM token in Proxy-Authenticate header" << std::endl;
+			return 3;
+		}
+
+		std::string tmp = proxyauth->second.begin()->substr(5);
+		std::vector<BYTE> challenge = base64_decode(std::begin(tmp), std::end(tmp));
+		std::cout << dump_memory(challenge);
 
 		/*
 		std::string password, data;

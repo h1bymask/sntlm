@@ -18,32 +18,56 @@ public:
 	{ }
 };
 
-std::string base64_encode(const std::vector<BYTE>& data) {
-	static const char b64table[64 + 1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+template <typename Iter>
+typename std::enable_if<
+	std::is_same<signed char, typename Iter::value_type>::value ||
+	std::is_same<unsigned char, typename Iter::value_type>::value ||
+	std::is_same<char, typename Iter::value_type>::value,
+std::string>::type 
+base64_encode(Iter begin, Iter end) {
+	static const unsigned char b64table[64 + 1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-	size_t len = data.size();
+	size_t len = end - begin;
 	std::string result(((len + 2) / 3) * 4, '\0');
 	size_t in = 0, out = 0;
+	Iter data = begin;
 	
 	while (in + 2 < len) {
-		result[out + 0] = b64table[data[in + 0] >> 2];
-		result[out + 1] = b64table[((data[in + 0] << 4) & 0x30) | (data[in + 1] >> 4)];
-		result[out + 2] = b64table[((data[in + 1] << 2) & 0x3C) | (data[in + 2] >> 6)];
-		result[out + 3] = b64table[data[in + 2] & 0x3F];
+		unsigned char a, b, c;
+		a = *(data++);
+		b = *(data++);
+		c = *(data++);
+
+		result[out + 0] = b64table[a >> 2];
+		result[out + 1] = b64table[((a << 4) & 0x30) | (b >> 4)];
+		result[out + 2] = b64table[((b << 2) & 0x3C) | (c >> 6)];
+		result[out + 3] = b64table[c & 0x3F];
 
 		in += 3;
 		out += 4;
 	}
 
 	if (in < len) {
-		result[out + 0] = b64table[data[in + 0] >> 2];
-		result[out + 1] = b64table[(data[in + 0] << 4) & 0x30 | (in + 1 < len ? data[in + 1] >> 4 : 0)];
-		result[out + 2] = (in + 1 < len) ? b64table[(data[in + 1] << 2) & 0x3C] : '=';
+		unsigned char a, b;
+		a = *(data++);
+		b = (in + 1 < len) ? *(data++) : 0;
+
+		result[out + 0] = b64table[a >> 2];
+		result[out + 1] = b64table[(a << 4) & 0x30 | (b >> 4)];
+		result[out + 2] = (in + 1 < len) ? b64table[(b << 2) & 0x3C] : '=';
 		result[out + 3] = '=';
 	}
+
+	return result;
 }
 
-std::vector<BYTE> base64_decode(const std::string& b64data) {
+template <typename Iter>
+typename std::enable_if<
+	std::is_same<signed char, typename Iter::value_type>::value ||
+	std::is_same<unsigned char, typename Iter::value_type>::value ||
+	std::is_same<char, typename Iter::value_type>::value,
+std::vector<BYTE>>::type
+base64_decode(Iter begin, Iter end) {
 	static const BYTE b64table[256 + 1] = 
 		"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 		"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
@@ -64,22 +88,23 @@ std::vector<BYTE> base64_decode(const std::string& b64data) {
 	const BYTE B64ERR  = BYTE(0xFF);
 	const BYTE B64DONE = BYTE(0xAA);
 	
-	size_t len = b64data.size();
+	size_t len = end - begin;
 	if (len % 4 != 0) { throw base64_exception("Invalid padding"); }
 
 	std::vector<BYTE> result((len / 4) * 3);
 	size_t in = 0, out = 0;
+	Iter data = begin;
 
 	while (in < len) {
 		unsigned int a, b, c, d, w;
 
-		a = b64table[b64data[in + 0]];
-		b = b64table[b64data[in + 1]];
-		c = b64table[b64data[in + 2]];
-		d = b64table[b64data[in + 3]];
+		a = b64table[*(data++)];
+		b = b64table[*(data++)];
+		c = b64table[*(data++)];
+		d = b64table[*(data++)];
 		in += 4;
 
-		w = (a << 18) || (b << 12) || (c << 6) || d;
+		w = (a << 18) | (b << 12) | (c << 6) | d;
 
 		if ((B64DONE == a) || (B64DONE == b)) { throw base64_exception("Invalid padding near offset " + numtostr(in)); }
 		if ((B64ERR == a) || (B64ERR == b) || (B64ERR == c) || (B64ERR == d)) {
