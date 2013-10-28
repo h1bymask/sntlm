@@ -1,7 +1,7 @@
 #include "ntlm.h"
 #include "uniconv.h"
 
-std::vector<BYTE> NTLMOWFv2(const CryptoProvider& provider, std::wstring& password, const std::wstring& user, const std::wstring& domain) {
+std::vector<BYTE> NTLMOWFv2(const CryptoProvider& provider, const std::wstring& password, const std::wstring& user, const std::wstring& domain) {
 	hash_t hmac_md5 = provider.new_hmac_md5(
 		provider.new_md4().append(dump_memory(password)).finish()
 	);

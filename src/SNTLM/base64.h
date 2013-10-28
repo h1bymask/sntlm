@@ -19,11 +19,7 @@ public:
 };
 
 template <typename Iter>
-typename std::enable_if<
-	std::is_same<signed char, typename Iter::value_type>::value ||
-	std::is_same<unsigned char, typename Iter::value_type>::value ||
-	std::is_same<char, typename Iter::value_type>::value,
-std::string>::type 
+typename std::enable_if<is_char<typename Iter::value_type>::value, std::string>::type
 base64_encode(Iter begin, Iter end) {
 	static const unsigned char b64table[64 + 1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -61,12 +57,8 @@ base64_encode(Iter begin, Iter end) {
 	return result;
 }
 
-template <typename Iter>
-typename std::enable_if<
-	std::is_same<signed char, typename Iter::value_type>::value ||
-	std::is_same<unsigned char, typename Iter::value_type>::value ||
-	std::is_same<char, typename Iter::value_type>::value,
-std::vector<BYTE>>::type
+template<typename Iter>
+typename std::enable_if<is_char<typename Iter::value_type>::value, std::vector<BYTE>>::type
 base64_decode(Iter begin, Iter end) {
 	static const BYTE b64table[256 + 1] = 
 		"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"

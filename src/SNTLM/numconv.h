@@ -25,6 +25,19 @@ namespace detail {
 	};
 }
 
+template<typename T>
+struct is_char : std::false_type { };
+
+template<>
+struct is_char<char> : std::true_type { };
+
+template<>
+struct is_char<signed char> : std::true_type { };
+
+template<>
+struct is_char<unsigned char> : std::true_type { };
+
+
 template <typename T>
 typename std::enable_if<std::is_integral<T>::value 
 	&& std::is_same<T, typename std::remove_cv<T>::type>::value

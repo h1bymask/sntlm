@@ -4,7 +4,7 @@
 
 #include "win32crypto.h"
 
-std::vector<BYTE> NTLMOWFv2(const CryptoProvider& provider, std::wstring& password, const std::wstring& user, const std::wstring& domain);
+std::vector<BYTE> NTLMOWFv2(const CryptoProvider& provider, const std::wstring& password, const std::wstring& user, const std::wstring& domain);
 
 class ntlm_request_t {
 public:
