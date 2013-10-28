@@ -16,34 +16,22 @@ public:
 	template <typename Iter>
 	typename std::enable_if<is_char<typename Iter::value_type>::value, void>::type
 	send(Iter first, Iter last) {
-		while (first != last) { 
-			int sent = ::send(s, reinterpret_cast<const char*>(&*first), last - first, 0);
-			if (SOCKET_ERROR == sent) {
-				DWORD error = WSAGetLastError();
-				throw win32_exception(error);
-			}
-			first += sent;
-		}
+		send_impl(reinterpret_cast<const char*>(&*first), last - first);
 	}
 
 	template <typename Iter>
 	typename std::enable_if<is_char<typename Iter::value_type>::value, Iter>::type
 	recv_upto(Iter first, Iter last) {
-		size_t buffsize = (last - first);
-
-		int len = (buffsize > MAXINT) ? MAXINT : buffsize;
-		int recvd = ::recv(s, reinterpret_cast<char*>(&*first), len, 0);
-		if (SOCKET_ERROR == recvd) {
-			DWORD error = WSAGetLastError();
-			throw win32_exception(error);
-		}
-		return (first + recvd);
+		return (first + recv_upto_impl(reinterpret_cast<char*>(&*first), last - first));
 	}
 
 private:
 	TcpClientSocket();
 	TcpClientSocket(const TcpClientSocket&);
 	TcpClientSocket& operator=(TcpClientSocket);
+
+	void send_impl(const char* data, size_t len);
+	size_t recv_upto_impl(char *buffer, size_t buffsize);
 
 	SOCKET s;
 };

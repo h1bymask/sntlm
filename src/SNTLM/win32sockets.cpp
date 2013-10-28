@@ -57,28 +57,26 @@ TcpClientSocket::~TcpClientSocket() {
 	::closesocket(s);
 }
 
-//void TcpClientSocket::send(std::vector<BYTE>::const_iterator first, std::vector<BYTE>::const_iterator last) {
-//	while (first != last) { 
-//		int sent = ::send(s, (const char*)(&*first), last - first, 0);
-//		if (SOCKET_ERROR == sent) {
-//			DWORD error = WSAGetLastError();
-//			throw win32_exception(error);
-//		}
-//		first += sent;
-//	}
-//}
+void TcpClientSocket::send_impl(const char* data, size_t len) {
+	while (len) {
+		int sent = ::send(s, data, std::min(len, (size_t)MAXINT), 0);
+		if (SOCKET_ERROR == sent) {
+			DWORD error = WSAGetLastError();
+			throw win32_exception(error);
+		}
+		data += sent;
+		len -= sent;
+	}
+}
 
-//std::vector<BYTE>::iterator TcpClientSocket::recv_upto(std::vector<BYTE>::iterator first, std::vector<BYTE>::iterator last) {
-//	size_t buffsize = (last - first);
-//
-//	int len = (buffsize > MAXINT) ? MAXINT : buffsize;
-//	int recvd = ::recv(s, (char*)(&*first), len, 0);
-//	if (SOCKET_ERROR == recvd) {
-//		DWORD error = WSAGetLastError();
-//		throw win32_exception(error);
-//	}
-//	return (first + recvd);
-//}
+size_t TcpClientSocket::recv_upto_impl(char *buffer, size_t buffsize) {
+	int recvd = ::recv(s, buffer, std::min(buffsize, (size_t)MAXINT), 0);
+	if (SOCKET_ERROR == recvd) {
+		DWORD error = WSAGetLastError();
+		throw win32_exception(error);
+	}
+	return recvd;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
