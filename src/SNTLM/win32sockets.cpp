@@ -192,7 +192,7 @@ std::string SocketBuffer::getcount(size_t byte_count) {
 std::string SocketBuffer::getchunk() {
 	std::string chunksize_raw = getline();
 	DWORD chunksize = 0;
-	if (strtonum(chunksize_raw, chunksize)) {
+	if (strtonum(chunksize_raw, chunksize, numconv::base_hex)) {
 		if (chunksize) {
 			std::string result = getcount(chunksize);
 			if (!getline().empty()) { throw std::runtime_error("CRLF after chunk-data was expected"); }
